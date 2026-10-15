@@ -1,0 +1,427 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:light dark}body{margin:0}</style><title>Ali Digital Card</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: one tall phone-first card. A black hero panel with NFC arcs on top, then hairline-ruled rows (no stacked boxes). */
+:root {
+  --bg: #F7F6F4;
+  --surface: #FFFFFF;
+  --fg: #0B0B0C;
+  --muted: #6A6A70;
+  --line: #E3E1DD;
+  --red: #E3202A;
+  --on-red: #FFFFFF;
+  --hero: #0B0B0C;
+  --hero-fg: #FFFFFF;
+  --hero-muted: #A3A3A9;
+  --hero-line: #2B2B2F;
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0B0C; --surface: #151517; --fg: #F3F2EF; --muted: #96969C; --line: #2A2A2E;
+    --red: #FF3B44; --on-red: #0B0B0C; --hero: #1B1B1E; --hero-line: #323236;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0B0C; --surface: #151517; --fg: #F3F2EF; --muted: #96969C; --line: #2A2A2E;
+  --red: #FF3B44; --on-red: #0B0B0C; --hero: #1B1B1E; --hero-line: #323236;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+.card { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+/* Hero */
+.hero {
+  position: relative; overflow: hidden;
+  background: var(--hero); color: var(--hero-fg);
+  border: 1px solid var(--hero-line);
+  border-radius: 28px;
+  padding: 22px 24px 26px;
+  min-height: 400px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 40px;
+}
+.hero-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; position: relative; z-index: 2; }
+.tap { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--hero-muted); }
+.tap svg { width: 26px; height: 26px; color: var(--red); }
+.tap .arc { transform-origin: 4px 13px; animation: pulse 2.4s ease-in-out infinite; opacity: .35; }
+.tap .arc:nth-child(2) { animation-delay: .25s; }
+.tap .arc:nth-child(3) { animation-delay: .5s; }
+@keyframes pulse { 0%, 100% { opacity: .25; } 40% { opacity: 1; } }
+.clock { font-family: var(--font-mono); font-size: 12px; color: var(--hero-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.clock b { color: var(--hero-fg); font-weight: 500; }
+
+/* Slow wave: each ring brightens in turn, smallest to largest, then the loop repeats. */
+.ring { transform-box: fill-box; transform-origin: center; animation: ripple 11s ease-in-out infinite; }
+.ring.r1 { opacity: .9; animation-delay: 0s; }
+.ring.r2 { opacity: .6; animation-delay: 1.3s; }
+.ring.r3 { opacity: .35; animation-delay: 2.6s; }
+.ring.r4 { opacity: .18; animation-delay: 3.9s; }
+@keyframes ripple {
+  0%, 45%, 100% { opacity: .14; transform: scale(1); }
+  20% { opacity: 1; transform: scale(1.035); }
+}
+.rings { position: absolute; right: -90px; bottom: -90px; width: 360px; height: 360px; z-index: 1; color: var(--red); pointer-events: none; }
+
+.hero-main { position: relative; z-index: 2; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--hero-muted); margin: 0 0 10px; }
+.name {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(88px, 28vw, 132px); line-height: .86; letter-spacing: -0.045em;
+  margin: 0; display: flex; align-items: baseline;
+}
+.name i { font-style: normal; color: var(--red); }
+.role { font-family: var(--font-display); font-weight: 500; font-size: 22px; line-height: 1.25; margin: 18px 0 6px; text-wrap: balance; }
+.roles { margin: 0; color: var(--hero-muted); font-size: 14px; }
+.roles b { color: var(--hero-fg); font-weight: 600; }
+
+/* Availability */
+.avail { display: flex; gap: 14px; align-items: flex-start; padding: 0 4px; }
+.dot { flex: none; width: 10px; height: 10px; margin-top: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 0 var(--red); animation: ping 2.2s ease-out infinite; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 55%, transparent); } 80%, 100% { box-shadow: 0 0 0 10px transparent; } }
+.avail p { margin: 0; font-size: 17px; line-height: 1.45; text-wrap: pretty; }
+.avail small { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+
+/* Section labels */
+.section { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; }
+.label { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; display: flex; align-items: center; gap: 10px; }
+.label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* Link rows */
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row a.main { display: flex; flex-direction: column; gap: 2px; padding: 14px 0; min-width: 0; }
+.row .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.row .v { font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: -0.01em; overflow-wrap: anywhere; transition: color .15s; }
+.row a.main:hover .v { color: var(--red); }
+.row .go { font-family: var(--font-mono); font-size: 18px; color: var(--muted); transition: transform .15s, color .15s; }
+.row a.main:hover ~ .go, .row:hover .go { color: var(--red); transform: translateX(3px); }
+.copy { appearance: none; background: transparent; border: 1px solid var(--line); color: var(--fg); font-family: var(--font-mono); font-size: 12px; padding: 7px 12px; border-radius: 999px; cursor: pointer; min-height: 34px; }
+.copy:hover { border-color: var(--red); color: var(--red); }
+
+/* What I build */
+.build { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.build li { padding: 16px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.build li:last-child { border-bottom: 0; }
+.build h3 { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; margin: 0; }
+.build p { margin: 0; color: var(--muted); font-size: 15px; max-width: 52ch; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tags span { font-family: var(--font-mono); font-size: 12px; padding: 4px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+
+/* Now */
+.now { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.now h3 { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.015em; margin: 0; }
+.now p { margin: 0; color: var(--muted); font-size: 15px; }
+.now a { color: var(--red); font-weight: 600; }
+
+/* CTA */
+.cta { appearance: none; border: 0; cursor: pointer; width: 100%; background: var(--red); color: var(--on-red); font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.005em; padding: 18px 22px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; transition: transform .15s; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { display: flex; align-items: center; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; transition: border-color .15s; }
+.tile.wide { grid-column: span 2; }
+.tile:hover { border-color: var(--red); }
+.tile .main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 11px 12px; }
+.tile .ico { flex: none; width: 20px; height: 20px; color: var(--red); }
+.tile .txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tile .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tile .v { font-weight: 600; font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; }
+.tile .cp { flex: none; margin-right: 8px; width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.tile .cp:hover { color: var(--red); }
+.tile .cp svg { width: 16px; height: 16px; }
+.savebox { display: flex; gap: 10px; align-items: stretch; }
+.savebox .cta { flex: 1; min-width: 0; }
+.qrbtn { appearance: none; flex: none; width: 62px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; display: grid; place-items: center; transition: border-color .15s, color .15s; }
+.qrbtn:hover { border-color: var(--red); color: var(--red); }
+.qrbtn svg { width: 28px; height: 28px; }
+.modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(11,11,12,.72); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.modal.on { opacity: 1; pointer-events: auto; }
+.sheet { width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 24px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.sheet h3 { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.015em; margin: 0; }
+.sheet p { margin: 0; color: var(--muted); font-size: 14px; text-wrap: balance; }
+.qrwrap { background: #fff; padding: 14px; border-radius: 16px; line-height: 0; }
+.qrwrap img, .qrwrap canvas { max-width: 100%; height: auto; }
+.sheet .name-line { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; color: var(--fg); }
+.closebtn { appearance: none; background: transparent; border: 1px solid var(--line); color: var(--fg); font-family: var(--font-mono); font-size: 12px; padding: 8px 18px; border-radius: 999px; cursor: pointer; min-height: 36px; }
+.closebtn:hover { border-color: var(--red); color: var(--red); }
+.cta.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.cta.ghost:hover { border-color: var(--red); color: var(--red); }
+.cta:hover { transform: translateY(-2px); }
+.cta:active { transform: translateY(0); }
+.cta span:last-child { font-family: var(--font-mono); font-weight: 500; font-size: 13px; }
+.foot { text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--fg); color: var(--bg); font-family: var(--font-mono); font-size: 13px; padding: 10px 16px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 10; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tap .arc, .dot { animation: none; opacity: 1; }
+  .ring { animation: none; }
+  .cta, .row .go, .toast { transition: none; }
+}
+@media (min-width: 700px) { body { padding-block: 56px; } }
+</style>
+
+<main class="card">
+  <section class="hero" aria-label="Ali">
+    <svg class="rings" viewBox="0 0 360 360" fill="none" aria-hidden="true">
+      <circle class="ring r1" cx="180" cy="180" r="60" stroke="currentColor" stroke-width="2"/>
+      <circle class="ring r2" cx="180" cy="180" r="100" stroke="currentColor" stroke-width="2"/>
+      <circle class="ring r3" cx="180" cy="180" r="140" stroke="currentColor" stroke-width="2"/>
+      <circle class="ring r4" cx="180" cy="180" r="178" stroke="currentColor" stroke-width="2"/>
+    </svg>
+
+    <div class="hero-top">
+      <div class="tap">
+        <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path class="arc" d="M9 8.5a6.5 6.5 0 0 1 0 9"/>
+          <path class="arc" d="M13.5 5a11.5 11.5 0 0 1 0 16"/>
+          <path class="arc" d="M18 1.5a16.5 16.5 0 0 1 0 23"/>
+        </svg>
+        <span>Tap to connect</span>
+      </div>
+      <div class="clock">Istanbul<br><b id="clock">--:--</b> <span>UTC+3</span></div>
+    </div>
+
+    <div class="hero-main">
+      <p class="eyebrow">Ali Malek</p>
+      <h1 class="name">Ali<i>.</i></h1>
+      <p class="role">Founder &amp; CTO at FAMMO.ai</p>
+      <p class="roles">Full-stack developer &nbsp;/&nbsp; <b>Amstack</b> web studio</p>
+    </div>
+  </section>
+
+  <div class="savebox">
+    <button class="cta" id="saveContact" type="button"><span>Save to my contacts</span><span>+ NEW</span></button>
+    <button class="qrbtn" id="openQr" type="button" aria-label="Show QR code to save contact">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="17" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="17" width="8" height="8" rx="1.5"/>
+        <path d="M17 17h3v3h-3zM23 17h2M17 23h2M22 22h3v3h-3z" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="avail">
+    <span class="dot" aria-hidden="true"></span>
+    <p>Open for Django and DRF backend projects from agencies in the Netherlands and Belgium.
+      <small>Based in Istanbul &middot; Remote across Europe</small></p>
+  </div>
+
+  <section class="section" aria-labelledby="l-connect">
+    <h2 class="label" id="l-connect">Connect</h2>
+    <div class="tiles" id="rows"></div>
+  </section>
+
+  <section class="section" aria-labelledby="l-build">
+    <h2 class="label" id="l-build">What I build</h2>
+    <ul class="build">
+      <li>
+        <h3>APIs and backends</h3>
+        <p>Clean Django REST Framework services on PostgreSQL, ready for a decoupled frontend.</p>
+        <div class="tags"><span>Django</span><span>DRF</span><span>PostgreSQL</span><span>Docker</span></div>
+      </li>
+      <li>
+        <h3>Fast frontends</h3>
+        <p>Next.js sites with technical SEO built in, plus Shopify themes in Liquid.</p>
+        <div class="tags"><span>Next.js</span><span>Shopify</span><span>Liquid</span><span>Technical SEO</span></div>
+      </li>
+      <li>
+        <h3>Automation and AI</h3>
+        <p>Telegram bots, n8n workflows and Claude API integrations that remove manual work.</p>
+        <div class="tags"><span>Claude API</span><span>n8n</span><span>Telegram bots</span><span>Ollama</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="l-now">
+    <h2 class="label" id="l-now">Now</h2>
+    <div class="now">
+      <h3>FAMMO.ai</h3>
+      <p>A pet nutrition platform for the Dutch and Belgian market. I lead the technical side as co-founder and CTO.</p>
+      <p><a href="https://fammo.ai" target="_blank" rel="noopener">Visit fammo.ai &rarr;</a></p>
+    </div>
+  </section>
+
+  <button class="cta ghost" id="copyAll" type="button"><span>Copy all contact details</span><span>COPY</span></button>
+  <p class="foot">Ali Malek &middot; Istanbul &middot; 2026</p>
+</main>
+<div class="modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+  <div class="sheet">
+    <h3 id="qrTitle">Scan to save</h3>
+    <p>Point any phone camera here. The contact opens ready to save.</p>
+    <div class="qrwrap" id="qrcode"></div>
+    <span class="name-line">ALI MALEK &middot; FAMMO.AI</span>
+    <button class="closebtn" id="closeQr" type="button">Close</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Edit this list. "wide" spans both columns, "copy" adds a copy button, "static" is a tile without a link. */
+var ICONS = {
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  whatsapp: '<path d="M4 20l1.3-4.2A8 8 0 1 1 8.2 18.8L4 20z"/><path d="M9 8.5c0 3.3 2.7 6 6 6l1-1.5-1.8-1-.9.7a3.5 3.5 0 0 1-1.7-1.7l.7-.9-1-1.8z"/>',
+  telegram: '<path d="M21 4 3 11l6.5 2.5L12 20l3-4.5 5 3.5L21 4z"/><path d="M9.5 13.5 21 4"/>',
+  pin: '<path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  paw: '<circle cx="6.5" cy="10" r="1.7"/><circle cx="10" cy="6.5" r="1.7"/><circle cx="14" cy="6.5" r="1.7"/><circle cx="17.5" cy="10" r="1.7"/><path d="M12 12c-3 0-5 2.6-5 4.6 0 1.6 1.3 2.4 2.8 2.4 1 0 1.5-.5 2.2-.5s1.2.5 2.2.5c1.5 0 2.8-.8 2.8-2.4 0-2-2-4.6-5-4.6z"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  linkedin: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v6M8 7.5v.01M12 16v-6M12 12.5c0-1.5 1.2-2.5 2.5-2.5S17 11 17 12.5V16"/>',
+  code: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>'
+};
+function svg(name) {
+  return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[name] + '</svg>';
+}
+var LINKS = [
+  { k: "Phone",    v: "+90 552 234 0731",         url: "tel:+905522340731", icon: "phone" },
+  { k: "WhatsApp", v: "Message me",               url: "https://wa.me/905522340731", icon: "whatsapp", copyText: "+905522340731" },
+  { k: "Telegram", v: "@Alimalek2087",            url: "https://t.me/Alimalek2087", icon: "telegram" },
+  { k: "Based in", v: "Istanbul, Türkiye",   static: true, icon: "pin" },
+  { k: "Email",    v: "ali.malek.work@gmail.com", url: "mailto:ali.malek.work@gmail.com", icon: "mail", wide: true, copy: true },
+  { k: "Email, FAMMO", v: "malek@fammo.ai",       url: "mailto:malek@fammo.ai", icon: "mail", wide: true, copy: true },
+  { k: "My startup", v: "fammo.ai",               url: "https://fammo.ai", icon: "paw" },
+  { k: "Website",  v: "amstack.org",              url: "https://www.amstack.org", icon: "globe" },
+  { k: "LinkedIn", v: "ali-malek-work",           url: "https://www.linkedin.com/in/ali-malek-work", icon: "linkedin" },
+  { k: "GitHub",   v: "alimalek80",               url: "https://github.com/alimalek80", icon: "code" }
+];
+
+var rows = document.getElementById("rows");
+LINKS.forEach(function (l) {
+  var tile = document.createElement("div");
+  tile.className = "tile" + (l.wide ? " wide" : "");
+  var main = document.createElement(l.static ? "div" : "a");
+  main.className = "main";
+  if (!l.static) {
+    main.href = l.url;
+    if (l.url.indexOf("http") === 0) { main.target = "_blank"; main.rel = "noopener"; }
+  }
+  main.innerHTML = svg(l.icon) + '<span class="txt"><span class="k"></span><span class="v"></span></span>';
+  main.querySelector(".k").textContent = l.k;
+  main.querySelector(".v").textContent = l.v;
+  tile.appendChild(main);
+  if (l.copy) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "cp";
+    b.setAttribute("aria-label", "Copy " + l.k);
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS.copy + '</svg>';
+    b.addEventListener("click", function () { copyText(l.v, l.k + " copied"); });
+    tile.appendChild(b);
+  }
+  rows.appendChild(tile);
+});
+
+var toast = document.getElementById("toast"), tt;
+function say(msg) {
+  toast.textContent = msg; toast.classList.add("on");
+  clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove("on"); }, 1800);
+}
+function fallbackCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(ta);
+  return ok;
+}
+function copyText(text, msg) {
+  function done(ok) { say(ok ? msg : "Press and hold to copy"); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallbackCopy(text)); });
+  } else { done(fallbackCopy(text)); }
+}
+document.getElementById("copyAll").addEventListener("click", function () {
+  var lines = ["Ali Malek", "Founder & CTO @FAMMO.ai"];
+  LINKS.forEach(function (l) { if (l.url) lines.push(l.k + ": " + (l.copyText || l.v)); });
+  copyText(lines.join("\n"), "Contact details copied");
+});
+
+/* The contact card is built here, so no separate .vcf file is needed. */
+var CONTACT = {
+  first: "Ali", last: "Malek", org: "FAMMO.ai", title: "Founder & CTO",
+  phone: "+905522340731",
+  emails: ["ali.malek.work@gmail.com", "malek@fammo.ai"],
+  urls: ["https://fammo.ai", "https://www.amstack.org", "https://www.linkedin.com/in/ali-malek-work", "https://github.com/alimalek80"],
+  note: "WhatsApp: +905522340731. Telegram: @Alimalek2087"
+};
+function buildVcard(full) {
+  var L = ["BEGIN:VCARD", "VERSION:3.0",
+    "N:" + CONTACT.last + ";" + CONTACT.first + ";;;",
+    "FN:" + CONTACT.first + " " + CONTACT.last,
+    "ORG:" + CONTACT.org, "TITLE:" + CONTACT.title,
+    "TEL;TYPE=CELL,VOICE:" + CONTACT.phone];
+  CONTACT.emails.forEach(function (e) { L.push("EMAIL;TYPE=INTERNET,WORK:" + e); });
+  /* The QR code carries fewer fields so it stays easy to scan. */
+  (full ? CONTACT.urls : CONTACT.urls.slice(0, 1)).forEach(function (u) { L.push("URL:" + u); });
+  if (full) L.push("NOTE:" + CONTACT.note);
+  L.push("END:VCARD");
+  return L.join("\r\n");
+}
+var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+document.getElementById("saveContact").addEventListener("click", function () {
+  var vcf = buildVcard(true);
+  if (isIOS) {
+    /* iPhone and iPad: Safari opens its Add Contact screen from a vCard data URL. */
+    say("Opening Contacts...");
+    window.location.href = "data:text/vcard;charset=utf-8," + encodeURIComponent(vcf);
+  } else {
+    /* Android and desktop: download the file, then tap Open to import it. */
+    var url = URL.createObjectURL(new Blob([vcf], { type: "text/vcard;charset=utf-8" }));
+    var a = document.createElement("a");
+    a.href = url; a.download = "Ali-Malek.vcf";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    say("Downloaded. Tap Open to add the contact");
+  }
+});
+
+var qrModal = document.getElementById("qrModal"), qrDone = false;
+function openQr() {
+  if (!qrDone) {
+    if (typeof QRCode === "undefined") { say("QR code could not load. Check your connection"); return; }
+    new QRCode(document.getElementById("qrcode"), {
+      text: buildVcard(false), width: 220, height: 220,
+      colorDark: "#0B0B0C", colorLight: "#FFFFFF", correctLevel: QRCode.CorrectLevel.M
+    });
+    qrDone = true;
+  }
+  qrModal.classList.add("on");
+}
+function closeQr() { qrModal.classList.remove("on"); }
+document.getElementById("openQr").addEventListener("click", openQr);
+document.getElementById("closeQr").addEventListener("click", closeQr);
+qrModal.addEventListener("click", function (e) { if (e.target === qrModal) closeQr(); });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeQr(); });
+
+function tick() {
+  try {
+    document.getElementById("clock").textContent = new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Istanbul"
+    }).format(new Date());
+  } catch (e) {}
+}
+tick(); setInterval(tick, 20000);
+</script>
+</html>
