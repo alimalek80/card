@@ -1,0 +1,337 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:light dark}body{margin:0}</style><title>Ali Digital Card</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one tall phone-first card. A black hero panel with NFC arcs on top, then hairline-ruled rows (no stacked boxes). */
+:root {
+  --bg: #F7F6F4;
+  --surface: #FFFFFF;
+  --fg: #0B0B0C;
+  --muted: #6A6A70;
+  --line: #E3E1DD;
+  --red: #E3202A;
+  --on-red: #FFFFFF;
+  --hero: #0B0B0C;
+  --hero-fg: #FFFFFF;
+  --hero-muted: #A3A3A9;
+  --hero-line: #2B2B2F;
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0B0C; --surface: #151517; --fg: #F3F2EF; --muted: #96969C; --line: #2A2A2E;
+    --red: #FF3B44; --on-red: #0B0B0C; --hero: #1B1B1E; --hero-line: #323236;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0B0C; --surface: #151517; --fg: #F3F2EF; --muted: #96969C; --line: #2A2A2E;
+  --red: #FF3B44; --on-red: #0B0B0C; --hero: #1B1B1E; --hero-line: #323236;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+.card { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+/* Hero */
+.hero {
+  position: relative; overflow: hidden;
+  background: var(--hero); color: var(--hero-fg);
+  border: 1px solid var(--hero-line);
+  border-radius: 28px;
+  padding: 22px 24px 26px;
+  min-height: 400px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 40px;
+}
+.hero-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; position: relative; z-index: 2; }
+.tap { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--hero-muted); }
+.tap svg { width: 26px; height: 26px; color: var(--red); }
+.tap .arc { transform-origin: 4px 13px; animation: pulse 2.4s ease-in-out infinite; opacity: .35; }
+.tap .arc:nth-child(2) { animation-delay: .25s; }
+.tap .arc:nth-child(3) { animation-delay: .5s; }
+@keyframes pulse { 0%, 100% { opacity: .25; } 40% { opacity: 1; } }
+.clock { font-family: var(--font-mono); font-size: 12px; color: var(--hero-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.clock b { color: var(--hero-fg); font-weight: 500; }
+
+.rings { position: absolute; right: -90px; bottom: -90px; width: 360px; height: 360px; z-index: 1; color: var(--red); pointer-events: none; }
+
+.hero-main { position: relative; z-index: 2; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--hero-muted); margin: 0 0 10px; }
+.name {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(88px, 28vw, 132px); line-height: .86; letter-spacing: -0.045em;
+  margin: 0; display: flex; align-items: baseline;
+}
+.name i { font-style: normal; color: var(--red); }
+.role { font-family: var(--font-display); font-weight: 500; font-size: 22px; line-height: 1.25; margin: 18px 0 6px; text-wrap: balance; }
+.roles { margin: 0; color: var(--hero-muted); font-size: 14px; }
+.roles b { color: var(--hero-fg); font-weight: 600; }
+
+/* Availability */
+.avail { display: flex; gap: 14px; align-items: flex-start; padding: 0 4px; }
+.dot { flex: none; width: 10px; height: 10px; margin-top: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 0 var(--red); animation: ping 2.2s ease-out infinite; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 55%, transparent); } 80%, 100% { box-shadow: 0 0 0 10px transparent; } }
+.avail p { margin: 0; font-size: 17px; line-height: 1.45; text-wrap: pretty; }
+.avail small { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+
+/* Section labels */
+.section { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; }
+.label { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; display: flex; align-items: center; gap: 10px; }
+.label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* Link rows */
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row a.main { display: flex; flex-direction: column; gap: 2px; padding: 14px 0; min-width: 0; }
+.row .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.row .v { font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: -0.01em; overflow-wrap: anywhere; transition: color .15s; }
+.row a.main:hover .v { color: var(--red); }
+.row .go { font-family: var(--font-mono); font-size: 18px; color: var(--muted); transition: transform .15s, color .15s; }
+.row a.main:hover ~ .go, .row:hover .go { color: var(--red); transform: translateX(3px); }
+.copy { appearance: none; background: transparent; border: 1px solid var(--line); color: var(--fg); font-family: var(--font-mono); font-size: 12px; padding: 7px 12px; border-radius: 999px; cursor: pointer; min-height: 34px; }
+.copy:hover { border-color: var(--red); color: var(--red); }
+
+/* What I build */
+.build { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.build li { padding: 16px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.build li:last-child { border-bottom: 0; }
+.build h3 { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; margin: 0; }
+.build p { margin: 0; color: var(--muted); font-size: 15px; max-width: 52ch; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tags span { font-family: var(--font-mono); font-size: 12px; padding: 4px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+
+/* Now */
+.now { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.now h3 { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.015em; margin: 0; }
+.now p { margin: 0; color: var(--muted); font-size: 15px; }
+.now a { color: var(--red); font-weight: 600; }
+
+/* CTA */
+.cta { appearance: none; border: 0; cursor: pointer; width: 100%; background: var(--red); color: var(--on-red); font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.005em; padding: 18px 22px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; transition: transform .15s; }
+.savebox { display: flex; flex-direction: column; gap: 12px; }
+.alt { text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.alt:hover { color: var(--red); }
+.cta.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.cta.ghost:hover { border-color: var(--red); color: var(--red); }
+.cta:hover { transform: translateY(-2px); }
+.cta:active { transform: translateY(0); }
+.cta span:last-child { font-family: var(--font-mono); font-weight: 500; font-size: 13px; }
+.foot { text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--fg); color: var(--bg); font-family: var(--font-mono); font-size: 13px; padding: 10px 16px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 10; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tap .arc, .dot { animation: none; opacity: 1; }
+  .cta, .row .go, .toast { transition: none; }
+}
+@media (min-width: 700px) { body { padding-block: 56px; } }
+</style>
+
+<main class="card">
+  <section class="hero" aria-label="Ali">
+    <svg class="rings" viewBox="0 0 360 360" fill="none" aria-hidden="true">
+      <circle cx="180" cy="180" r="60" stroke="currentColor" stroke-width="2" opacity=".9"/>
+      <circle cx="180" cy="180" r="100" stroke="currentColor" stroke-width="2" opacity=".6"/>
+      <circle cx="180" cy="180" r="140" stroke="currentColor" stroke-width="2" opacity=".35"/>
+      <circle cx="180" cy="180" r="178" stroke="currentColor" stroke-width="2" opacity=".18"/>
+    </svg>
+
+    <div class="hero-top">
+      <div class="tap">
+        <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path class="arc" d="M9 8.5a6.5 6.5 0 0 1 0 9"/>
+          <path class="arc" d="M13.5 5a11.5 11.5 0 0 1 0 16"/>
+          <path class="arc" d="M18 1.5a16.5 16.5 0 0 1 0 23"/>
+        </svg>
+        <span>Tap to connect</span>
+      </div>
+      <div class="clock">Istanbul<br><b id="clock">--:--</b> <span>UTC+3</span></div>
+    </div>
+
+    <div class="hero-main">
+      <p class="eyebrow">Ali Malek</p>
+      <h1 class="name">Ali<i>.</i></h1>
+      <p class="role">Founder &amp; CTO at FAMMO.ai</p>
+      <p class="roles">Full-stack developer &nbsp;/&nbsp; <b>Amstack</b> web studio</p>
+    </div>
+  </section>
+
+  <div class="savebox">
+    <a class="cta" id="saveContact" href="ali-malek.vcf" download="Ali-Malek.vcf"><span>Save to my contacts</span><span>+ NEW</span></a>
+    <a class="alt" href="ali-malek.vcf" download="Ali-Malek.vcf">Contacts app not opening? Download the contact file</a>
+  </div>
+
+  <div class="avail">
+    <span class="dot" aria-hidden="true"></span>
+    <p>Open for Django and DRF backend projects from agencies in the Netherlands and Belgium.
+      <small>Based in Istanbul &middot; Remote across Europe</small></p>
+  </div>
+
+  <section class="section" aria-labelledby="l-connect">
+    <h2 class="label" id="l-connect">Connect</h2>
+    <ul class="rows" id="rows"></ul>
+  </section>
+
+  <section class="section" aria-labelledby="l-build">
+    <h2 class="label" id="l-build">What I build</h2>
+    <ul class="build">
+      <li>
+        <h3>APIs and backends</h3>
+        <p>Clean Django REST Framework services on PostgreSQL, ready for a decoupled frontend.</p>
+        <div class="tags"><span>Django</span><span>DRF</span><span>PostgreSQL</span><span>Docker</span></div>
+      </li>
+      <li>
+        <h3>Fast frontends</h3>
+        <p>Next.js sites with technical SEO built in, plus Shopify themes in Liquid.</p>
+        <div class="tags"><span>Next.js</span><span>Shopify</span><span>Liquid</span><span>Technical SEO</span></div>
+      </li>
+      <li>
+        <h3>Automation and AI</h3>
+        <p>Telegram bots, n8n workflows and Claude API integrations that remove manual work.</p>
+        <div class="tags"><span>Claude API</span><span>n8n</span><span>Telegram bots</span><span>Ollama</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="l-now">
+    <h2 class="label" id="l-now">Now</h2>
+    <div class="now">
+      <h3>FAMMO.ai</h3>
+      <p>A pet nutrition platform for the Dutch and Belgian market. I lead the technical side as co-founder and CTO.</p>
+      <p><a href="https://fammo.ai" target="_blank" rel="noopener">Visit fammo.ai &rarr;</a></p>
+    </div>
+  </section>
+
+  <button class="cta ghost" id="copyAll" type="button"><span>Copy all contact details</span><span>COPY</span></button>
+  <p class="foot">Ali Malek &middot; Istanbul &middot; 2026</p>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Edit this list. Entries with an empty "url" are hidden. "copy" adds a copy button. */
+var LINKS = [
+  { k: "Phone",    v: "+90 552 234 07 31",           url: "tel:+905522340731", copy: true },
+  { k: "WhatsApp", v: "+90 552 234 07 31",           url: "https://wa.me/905522340731" },
+  { k: "Telegram", v: "@Alimalek2087",               url: "https://t.me/Alimalek2087" },
+  { k: "Email",    v: "ali.malek.work@gmail.com",    url: "mailto:ali.malek.work@gmail.com", copy: true },
+  { k: "Email, FAMMO", v: "malek@fammo.ai",          url: "mailto:malek@fammo.ai", copy: true },
+  { k: "My startup", v: "fammo.ai",                  url: "https://fammo.ai" },
+  { k: "Website",  v: "amstack.org",                 url: "https://www.amstack.org" },
+  { k: "LinkedIn", v: "in/ali-malek-work",           url: "https://www.linkedin.com/in/ali-malek-work" },
+  { k: "GitHub",   v: "github.com/alimalek80",       url: "https://github.com/alimalek80" }
+];
+
+var rows = document.getElementById("rows");
+LINKS.forEach(function (l) {
+  if (!l.url) return;
+  var li = document.createElement("li");
+  li.className = "row";
+  var a = document.createElement("a");
+  a.className = "main";
+  a.href = l.url;
+  if (l.url.indexOf("http") === 0) { a.target = "_blank"; a.rel = "noopener"; }
+  a.innerHTML = '<span class="k"></span><span class="v"></span>';
+  a.querySelector(".k").textContent = l.k;
+  a.querySelector(".v").textContent = l.v;
+  li.appendChild(a);
+  if (l.copy) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "copy"; b.textContent = "Copy";
+    b.setAttribute("aria-label", "Copy " + l.k);
+    b.addEventListener("click", function () { copyText(l.v, l.k + " copied"); });
+    li.appendChild(b);
+  } else {
+    var g = document.createElement("span");
+    g.className = "go"; g.setAttribute("aria-hidden", "true"); g.textContent = "→";
+    li.appendChild(g);
+  }
+  rows.appendChild(li);
+});
+
+var toast = document.getElementById("toast"), tt;
+function say(msg) {
+  toast.textContent = msg; toast.classList.add("on");
+  clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove("on"); }, 1800);
+}
+function fallbackCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(ta);
+  return ok;
+}
+function copyText(text, msg) {
+  function done(ok) { say(ok ? msg : "Press and hold to copy"); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallbackCopy(text)); });
+  } else { done(fallbackCopy(text)); }
+}
+document.getElementById("copyAll").addEventListener("click", function () {
+  var lines = ["Ali Malek", "Founder & CTO @FAMMO.ai"];
+  LINKS.forEach(function (l) { if (l.url) lines.push(l.k + ": " + l.v); });
+  copyText(lines.join("\n"), "Contact details copied");
+});
+
+/* Android: open the Contacts app on a prefilled "new contact" screen (Save is one tap). Other devices keep the .vcf link. */
+(function () {
+  var a = document.getElementById("saveContact");
+  if (!a) return;
+  /* iPhone and iPad: open the .vcf directly so Safari shows its "Add to Contacts" preview instead of saving to Files. */
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
+    a.removeAttribute("download");
+    a.removeAttribute("target");
+    return;
+  }
+  if (!/Android/i.test(navigator.userAgent)) return;
+  var f = {
+    name: "Ali Malek",
+    phone: "+905522340731",
+    email: "ali.malek.work@gmail.com",
+    secondary_email: "malek@fammo.ai",
+    company: "FAMMO.ai",
+    job_title: "Founder & CTO",
+    notes: "WhatsApp: +905522340731\nTelegram: @Alimalek2087\nfammo.ai\namstack.org\nlinkedin.com/in/ali-malek-work\ngithub.com/alimalek80"
+  };
+  var s = "intent:#Intent;action=android.intent.action.INSERT;type=vnd.android.cursor.dir/contact;";
+  Object.keys(f).forEach(function (k) { s += "S." + k + "=" + encodeURIComponent(f[k]) + ";"; });
+  /* If the Contacts app refuses to open from the browser, Chrome goes to the .vcf file instead of doing nothing. */
+  var vcf = new URL("ali-malek.vcf", location.href).href;
+  s += "S.browser_fallback_url=" + encodeURIComponent(vcf) + ";";
+  s += "end";
+  a.setAttribute("href", s);
+  a.removeAttribute("download");
+  a.removeAttribute("target");
+})();
+
+function tick() {
+  try {
+    document.getElementById("clock").textContent = new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Istanbul"
+    }).format(new Date());
+  } catch (e) {}
+}
+tick(); setInterval(tick, 20000);
+</script>
+</html>
